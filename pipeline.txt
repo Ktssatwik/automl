@@ -1,0 +1,121 @@
+﻿Agentic AutoML POC - Delivery Pipeline (Phase-wise)
+===================================================
+
+Phase 1: Project Setup and Skeleton
+-----------------------------------
+What to do:
+- Create folder structure for backend, frontend, agents, services, schemas, storage.
+- Add requirements files (FastAPI, uvicorn, streamlit, pandas, numpy, scikit-learn, joblib, python-multipart).
+- Add starter README and .gitignore.
+
+Done criteria:
+- Project installs dependencies successfully.
+- FastAPI and Streamlit apps start without errors.
+
+Phase 2: Core Backend APIs and Job Management
+---------------------------------------------
+What to do:
+- Implement `POST /upload-csv` to save CSV and create `job_id`.
+- Implement in-memory/file-backed pipeline state service with step statuses.
+- Implement route stubs for all required APIs:
+  - POST /run-automl
+  - GET /pipeline-status/{job_id}
+  - GET /eda-report/{job_id}
+  - GET /model-results/{job_id}
+  - POST /predict/{job_id}
+  - GET /download-model/{job_id}
+
+Done criteria:
+- API contracts available and testable via Swagger.
+- Job lifecycle exists (created -> running -> completed/failed).
+
+Phase 3: Agent Framework and Master Orchestration
+--------------------------------------------------
+What to do:
+- Create `BaseAgent` interface.
+- Implement `MasterAgent` that runs agents in order and updates status:
+  - pending -> running -> completed/failed
+- Add robust try/except and logging at each step.
+
+Done criteria:
+- Master agent can execute a mock pipeline end-to-end with structured step outputs.
+
+Phase 4: Data Understanding Agents
+----------------------------------
+What to do:
+- Implement CSV Understanding Agent:
+  - schema, missing values, uniques, target candidates, selected target + reasoning.
+- Implement Problem Type Agent:
+  - classification vs regression with explainable heuristics.
+- Implement Domain Agent:
+  - infer domain from columns/target keywords.
+- Implement EDA Agent:
+  - summary stats, frequencies, correlations, outlier indicators.
+
+Done criteria:
+- For uploaded CSV, system returns selected target, problem type, domain, and EDA payload.
+
+Phase 5: ML Pipeline Agents
+---------------------------
+What to do:
+- Implement Preprocessing Agent using `ColumnTransformer` + `Pipeline`.
+- Implement Split Agent with stratified split for valid classification cases.
+- Implement Training Agent with task-based candidate models.
+- Implement CV Agent using KFold/StratifiedKFold.
+- Implement Metrics Agent with task-specific metrics.
+- Implement Model Selection Agent to choose and save best pipeline.
+
+Done criteria:
+- Pipeline trains multiple models and stores comparison + best model artifact.
+
+Phase 6: Prediction and Reporting
+---------------------------------
+What to do:
+- Implement Prediction Agent to load model and infer from new record.
+- Implement Report Agent for final consolidated summary.
+- Wire API endpoints:
+  - /eda-report
+  - /model-results
+  - /predict
+  - /download-model
+
+Done criteria:
+- Prediction works on new input.
+- Trained model file is downloadable.
+- Final report is accessible per job.
+
+Phase 7: Streamlit Frontend Integration
+---------------------------------------
+What to do:
+- Build upload + dataset preview screen.
+- Add "Run AutoML" trigger.
+- Poll status endpoint and show step tracker (Pending/Running/Completed/Failed).
+- Show EDA summary, selected target, problem type, model comparison, final metrics.
+- Build dynamic prediction form from saved feature columns.
+- Add download model button.
+
+Done criteria:
+- End-to-end user flow works from upload to prediction and model download.
+
+Phase 8: Testing, Hardening, and Documentation
+-----------------------------------------------
+What to do:
+- Add sample insurance CSV for demo.
+- Smoke test on at least 2 classification and 2 regression datasets.
+- Improve error messages and fallback behavior.
+- Finalize README with setup and run commands.
+
+Done criteria:
+- POC is reproducible by a new user using README only.
+- Demo flow is stable and understandable.
+
+Execution Order Summary
+-----------------------
+1. Setup skeleton
+2. APIs + job state
+3. Master orchestration
+4. Data understanding agents
+5. ML agents
+6. Prediction/reporting
+7. Streamlit integration
+8. Testing/docs

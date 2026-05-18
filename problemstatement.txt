@@ -1,0 +1,65 @@
+﻿Problem Statement - Agentic AutoML POC
+======================================
+
+Background
+----------
+Many users with domain data (insurance, healthcare, finance, housing, churn, education, loan approval) struggle to build ML models because model development requires data understanding, preprocessing choices, algorithm selection, evaluation, and deployment knowledge.
+
+Core Problem
+------------
+Given only a CSV upload, how can we automatically build a reliable ML workflow that:
+- identifies the most likely target column,
+- determines whether the problem is classification or regression,
+- runs full data preparation and modeling,
+- evaluates and selects the best model,
+- and makes the model immediately usable for prediction and download?
+
+Objective
+---------
+Create a complete Proof of Concept system with a multi-agent architecture where each agent handles one specialized ML task and a master agent coordinates the entire lifecycle end-to-end.
+
+Scope
+-----
+In scope:
+- CSV upload and dataset profiling
+- Automatic target inference using heuristics
+- Automatic problem type detection
+- Rule-based domain inference
+- EDA summaries for interpretability
+- Preprocessing pipeline construction (no leakage)
+- Train/test split + cross-validation
+- Multi-model training and comparison
+- Best model selection and persistence
+- Prediction endpoint/UI for new records
+- Downloadable model artifact
+- Step-wise pipeline tracking with statuses
+
+Out of scope (for first POC):
+- Advanced hyperparameter optimization
+- Large-scale distributed compute
+- Production-grade auth and orchestration infra
+- Real-time stream processing
+
+Functional Requirements
+-----------------------
+- Backend FastAPI endpoints for upload, run, status, reports, prediction, and model download.
+- Streamlit frontend for full user interaction.
+- Separate class per agent with structured outputs.
+- Job-based tracking and persistent artifacts.
+- Logging and exception handling.
+- Dataset-agnostic behavior for tabular CSVs.
+
+Success Criteria
+----------------
+- User can upload any reasonable tabular CSV.
+- System auto-detects target and task type with explanation.
+- Full agent pipeline completes and produces evaluated best model.
+- User can submit a new record and receive prediction.
+- User can download trained model file.
+- UI clearly shows progress and final results.
+
+Future Extension
+----------------
+- Replace or augment rule-based agents with LLM reasoning.
+- Add MCP tool integrations to agent decision points.
+- Expand model search, explainability, and deployment options.

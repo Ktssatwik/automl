@@ -1,0 +1,103 @@
+﻿Agentic AutoML POC - Architecture
+================================
+
+1. Goal
+- Build a working POC where user uploads a CSV and the system auto-runs complete ML pipeline using coordinated agents.
+- Deliver prediction capability and downloadable trained model.
+
+2. Proposed Project File Structure
+
+automl-agent-poc/
+|-- backend/
+|   |-- main.py                       # FastAPI app + route wiring
+|   |-- requirements.txt
+|   |
+|   |-- agents/
+|   |   |-- __init__.py
+|   |   |-- base_agent.py             # common agent interface: run(context) -> dict
+|   |   |-- master_agent.py           # orchestrates all agents and step transitions
+|   |   |-- csv_understanding_agent.py
+|   |   |-- problem_type_agent.py
+|   |   |-- domain_agent.py
+|   |   |-- eda_agent.py
+|   |   |-- preprocessing_agent.py
+|   |   |-- split_agent.py
+|   |   |-- training_agent.py
+|   |   |-- cv_agent.py
+|   |   |-- metrics_agent.py
+|   |   |-- model_selection_agent.py
+|   |   |-- prediction_agent.py
+|   |   `-- report_agent.py
+|   |
+|   |-- schemas/
+|   |   |-- __init__.py
+|   |   |-- requests.py               # Pydantic request models
+|   |   `-- responses.py              # Pydantic response models
+|   |
+|   |-- services/
+|   |   |-- __init__.py
+|   |   |-- pipeline_state.py         # per job state + step status store
+|   |   |-- model_store.py            # save/load pipeline + metadata
+|   |   `-- utils.py                  # helpers: io, validation, json serialization
+|   |
+|   |-- storage/
+|   |   |-- uploads/
+|   |   |-- models/
+|   |   `-- reports/
+|   |
+|   `-- sample_data/
+|       `-- insurance_sample.csv
+|
+|-- frontend/
+|   |-- app.py                        # Streamlit UI
+|   `-- requirements.txt
+|
+|-- README.md
+`-- .gitignore
+
+3. Core Runtime Components
+- Streamlit frontend:
+  - CSV upload
+  - Run AutoML button
+  - Poll and show pipeline status
+  - Show EDA/results/model comparison
+  - Prediction input form
+  - Model download action
+
+- FastAPI backend:
+  - upload/run/status/result/predict/download endpoints
+  - validates input and routes work to Master Agent
+
+- Master Agent:
+  - maintains context and step status
+  - executes specialist agents in strict order
+  - captures outputs/errors and final report
+
+- Specialist Agents:
+  - one responsibility per file
+  - deterministic rule-based logic for POC
+  - structured JSON-like return payloads
+
+- Services:
+  - persistent job state keyed by job_id
+  - model artifact and metadata persistence
+  - reusable utility methods
+
+4. Data and Artifact Flow
+- Upload CSV -> save to storage/uploads/{job_id}.csv
+- Run pipeline -> generate EDA + model metrics + best model
+- Save outputs:
+  - storage/models/{job_id}_pipeline.joblib
+  - storage/models/{job_id}_metadata.json
+  - storage/reports/{job_id}_eda.json
+  - storage/reports/{job_id}_report.json
+
+5. MCP/LLM Ready Design Points
+- Keep agent contract stable: run(context: dict) -> dict
+- Add explicit placeholders in each agent for future MCP tool calls
+- Keep reasoning fields in outputs so LLM agent replacement is easy
+
+6. POC Boundaries
+- No advanced tuning or distributed training
+- No production auth/queueing
+- Focus on clean modular architecture and full end-to-end usability
