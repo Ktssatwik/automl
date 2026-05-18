@@ -8,6 +8,7 @@ try:
     from backend.services.utils import MODELS_DIR
 except ModuleNotFoundError:
     from services.utils import MODELS_DIR
+    
 
 
 def model_file_path(job_id: str) -> Path:
