@@ -13,6 +13,7 @@ try:
     from backend.agents.problem_type_agent import ProblemTypeAgent
     from backend.agents.report_agent import ReportAgent
     from backend.agents.split_agent import SplitAgent
+    from backend.agents.step_explanation_agent import StepExplanationAgent
     from backend.agents.training_agent import TrainingAgent
     from backend.services.pipeline_state import pipeline_state_service
     from backend.services.utils import REPORTS_DIR
@@ -27,6 +28,7 @@ except ModuleNotFoundError:
     from agents.problem_type_agent import ProblemTypeAgent
     from agents.report_agent import ReportAgent
     from agents.split_agent import SplitAgent
+    from agents.step_explanation_agent import StepExplanationAgent
     from agents.training_agent import TrainingAgent
     from services.pipeline_state import pipeline_state_service
     from services.utils import REPORTS_DIR
@@ -41,13 +43,14 @@ class MasterAgent:
             ("problem_type_detection", ProblemTypeAgent()),
             ("domain_understanding", DomainAgent()),
             ("eda", EDAAgent()),
-            ("preprocessing", PreprocessingAgent()),
             ("train_test_split", SplitAgent()),
+            ("preprocessing", PreprocessingAgent()),
             ("model_training", TrainingAgent()),
             ("cross_validation", CVAgent()),
             ("metrics_evaluation", MetricsAgent()),
             ("model_selection", ModelSelectionAgent()),
             ("report_generation", ReportAgent()),
+            ("step_explanation", StepExplanationAgent()),
         ]
 
     def run(self, job_id: str) -> Dict[str, Any]:

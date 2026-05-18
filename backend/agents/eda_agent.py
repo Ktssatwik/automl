@@ -78,7 +78,7 @@ class EDAAgent(BaseAgent):
             "outlier_summary": outlier_summary,
             "instruction": "Provide concise EDA insights and modeling cautions.",
         }
-        system_prompt = "Return strict JSON with key llm_eda_summary (string)."
+        system_prompt = llm_service.render_prompt("eda_system.j2")
         llm_out = llm_service.ask_json(system_prompt, payload)
         llm_summary = llm_out.get("llm_eda_summary")
         if not isinstance(llm_summary, str) or not llm_summary.strip():
@@ -98,5 +98,10 @@ class EDAAgent(BaseAgent):
             "correlation_summary": correlation_summary,
             "outlier_summary": outlier_summary,
             "llm_eda_summary": llm_summary.strip(),
+            "llm_response": {
+                "decision_taken": str(llm_out.get("decision_taken", "Generated EDA interpretation and modeling cautions.")),
+                "why": str(llm_out.get("why", llm_summary.strip())),
+                "raw_decision": llm_out,
+            },
             "summary_mode": "llm",
         }

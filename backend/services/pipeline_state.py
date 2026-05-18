@@ -8,13 +8,14 @@ PIPELINE_STEPS: List[str] = [
     "problem_type_detection",
     "domain_understanding",
     "eda",
-    "preprocessing",
     "train_test_split",
+    "preprocessing",
     "model_training",
     "cross_validation",
     "metrics_evaluation",
     "model_selection",
     "report_generation",
+    "step_explanation",
 ]
 
 

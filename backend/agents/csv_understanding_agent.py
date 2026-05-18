@@ -45,10 +45,7 @@ class CSVUnderstandingAgent(BaseAgent):
             "columns_profile": column_profiles,
             "instruction": "Choose exactly one most likely target column and explain briefly.",
         }
-        system_prompt = (
-            "You are a dataset understanding agent. Return strict JSON keys: "
-            "selected_target (string), reasoning (string), top_candidates (array of strings)."
-        )
+        system_prompt = llm_service.render_prompt("csv_understanding_system.j2")
         llm_out = llm_service.ask_json(system_prompt, payload)
 
         selected_target = llm_out.get("selected_target")
@@ -65,5 +62,10 @@ class CSVUnderstandingAgent(BaseAgent):
             "target_candidates": [str(x) for x in llm_out.get("top_candidates", [])][:5],
             "selected_target": selected_target,
             "reasoning": str(llm_out.get("reasoning", "")),
+            "llm_response": {
+                "decision_taken": str(llm_out.get("decision_taken", f"Selected target column '{selected_target}'.")),
+                "why": str(llm_out.get("why", llm_out.get("reasoning", ""))),
+                "raw_decision": llm_out,
+            },
             "decision_mode": "llm",
         }

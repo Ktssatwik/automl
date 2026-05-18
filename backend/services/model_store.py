@@ -10,7 +10,6 @@ except ModuleNotFoundError:
     from services.utils import MODELS_DIR
     
 
-
 def model_file_path(job_id: str) -> Path:
     return MODELS_DIR / f"{job_id}_pipeline.joblib"
 
@@ -27,6 +26,26 @@ def save_model_artifacts(job_id: str, pipeline_obj: Any, metadata: Dict[str, Any
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     return {
+        "model_path": str(model_path),
+        "metadata_path": str(metadata_path),
+    }
+
+
+def load_model_artifacts(job_id: str) -> Dict[str, Any]:
+    model_path = model_file_path(job_id)
+    metadata_path = metadata_file_path(job_id)
+
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
+
+    pipeline_obj = joblib.load(model_path)
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    return {
+        "pipeline": pipeline_obj,
+        "metadata": metadata,
         "model_path": str(model_path),
         "metadata_path": str(metadata_path),
     }

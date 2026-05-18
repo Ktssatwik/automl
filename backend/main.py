@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 
 try:
     from backend.agents.master_agent import MasterAgent
+    from backend.agents.prediction_agent import PredictionAgent
     from backend.schemas.requests import PredictRequest, RunAutoMLRequest
     from backend.schemas.responses import (
         GenericMessageResponse,
@@ -18,6 +19,7 @@ try:
     from backend.services.utils import MODELS_DIR, REPORTS_DIR, UPLOADS_DIR, ensure_storage_dirs
 except ModuleNotFoundError:
     from agents.master_agent import MasterAgent
+    from agents.prediction_agent import PredictionAgent
     from schemas.requests import PredictRequest, RunAutoMLRequest
     from schemas.responses import (
         GenericMessageResponse,
@@ -36,6 +38,7 @@ logger = logging.getLogger("automl-backend")
 
 app = FastAPI(title="Agentic AutoML POC Backend", version="0.3.0")
 master_agent = MasterAgent()
+prediction_agent = PredictionAgent()
 
 
 @app.on_event("startup")
@@ -168,20 +171,39 @@ def model_results(job_id: str) -> StubDataResponse:
     )
 
 
+@app.get("/job-outputs/{job_id}", response_model=StubDataResponse)
+def job_outputs(job_id: str) -> StubDataResponse:
+    job = pipeline_state_service.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    outputs = job.get("outputs", {})
+    if outputs:
+        return StubDataResponse(job_id=job_id, status="ready", data=outputs)
+
+    return StubDataResponse(
+        job_id=job_id,
+        status="not_ready",
+        data={"message": "No step outputs available yet."},
+    )
+
+
 @app.post("/predict/{job_id}", response_model=StubDataResponse)
 def predict(job_id: str, payload: PredictRequest) -> StubDataResponse:
     job = pipeline_state_service.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
+    if job.get("job_status") != "completed":
+        raise HTTPException(status_code=400, detail="AutoML run not completed for this job.")
 
-    return StubDataResponse(
-        job_id=job_id,
-        status="not_ready",
-        data={
-            "message": "Prediction endpoint remains a stub until Phase 6.",
-            "received_record": payload.record,
-        },
-    )
+    try:
+        prediction = prediction_agent.run({"job_id": job_id, "record": payload.record})
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {exc}") from exc
+
+    return StubDataResponse(job_id=job_id, status="ready", data=prediction)
 
 
 @app.get("/download-model/{job_id}")

@@ -3,8 +3,10 @@ uvicorn
 pandas
 numpy
 scikit-learn
+imbalanced-learn
 joblib
 python-multipart
 python-dotenv
+jinja2
 langchain-core
 langchain-groq

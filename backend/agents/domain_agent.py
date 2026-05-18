@@ -25,10 +25,7 @@ class DomainAgent(BaseAgent):
             ],
             "instruction": "Infer one domain and provide signals plus preprocessing notes.",
         }
-        system_prompt = (
-            "You are a domain inference agent for tabular ML. Return strict JSON keys: "
-            "domain (string), signals (array of strings), notes_for_preprocessing (string)."
-        )
+        system_prompt = llm_service.render_prompt("domain_system.j2")
         llm_out = llm_service.ask_json(system_prompt, payload)
 
         domain = str(llm_out.get("domain", "")).strip().lower()
@@ -49,5 +46,15 @@ class DomainAgent(BaseAgent):
             "domain": domain,
             "signals": [str(s) for s in signals[:10]],
             "notes_for_preprocessing": notes,
+            "llm_response": {
+                "decision_taken": str(llm_out.get("decision_taken", f"Inferred domain as '{domain}'.")),
+                "why": str(
+                    llm_out.get(
+                        "why",
+                        f"Based on feature and target semantics; key signals: {', '.join([str(s) for s in signals[:3]]) if signals else 'no explicit signals returned'}",
+                    )
+                ),
+                "raw_decision": llm_out,
+            },
             "decision_mode": "llm",
         }
