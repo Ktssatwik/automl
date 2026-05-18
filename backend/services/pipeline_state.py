@@ -33,6 +33,7 @@ class PipelineStateService:
             "report_path": None,
             "eda_path": None,
             "steps": [{"name": step, "status": "Pending", "message": ""} for step in PIPELINE_STEPS],
+            "outputs": {},
             "created_at": now,
             "updated_at": now,
             "error": None,
@@ -66,6 +67,35 @@ class PipelineStateService:
                     step["status"] = status
                     step["message"] = message
                     break
+            job["updated_at"] = datetime.now(timezone.utc)
+            return deepcopy(job)
+
+    def set_output(self, job_id: str, key: str, value: Any) -> Dict[str, Any] | None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if not job:
+                return None
+            job["outputs"][key] = value
+            job["updated_at"] = datetime.now(timezone.utc)
+            return deepcopy(job)
+
+    def set_paths(
+        self,
+        job_id: str,
+        model_path: str | None = None,
+        report_path: str | None = None,
+        eda_path: str | None = None,
+    ) -> Dict[str, Any] | None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if not job:
+                return None
+            if model_path is not None:
+                job["model_path"] = model_path
+            if report_path is not None:
+                job["report_path"] = report_path
+            if eda_path is not None:
+                job["eda_path"] = eda_path
             job["updated_at"] = datetime.now(timezone.utc)
             return deepcopy(job)
 

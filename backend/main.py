@@ -1,19 +1,32 @@
 ﻿import logging
+import threading
 import uuid
-from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
-from backend.schemas.requests import PredictRequest, RunAutoMLRequest
-from backend.schemas.responses import (
-    GenericMessageResponse,
-    JobResponse,
-    StatusResponse,
-    StubDataResponse,
-)
-from backend.services.pipeline_state import pipeline_state_service
-from backend.services.utils import MODELS_DIR, REPORTS_DIR, UPLOADS_DIR, ensure_storage_dirs
+try:
+    from backend.agents.master_agent import MasterAgent
+    from backend.schemas.requests import PredictRequest, RunAutoMLRequest
+    from backend.schemas.responses import (
+        GenericMessageResponse,
+        JobResponse,
+        StatusResponse,
+        StubDataResponse,
+    )
+    from backend.services.pipeline_state import pipeline_state_service
+    from backend.services.utils import MODELS_DIR, REPORTS_DIR, UPLOADS_DIR, ensure_storage_dirs
+except ModuleNotFoundError:
+    from agents.master_agent import MasterAgent
+    from schemas.requests import PredictRequest, RunAutoMLRequest
+    from schemas.responses import (
+        GenericMessageResponse,
+        JobResponse,
+        StatusResponse,
+        StubDataResponse,
+    )
+    from services.pipeline_state import pipeline_state_service
+    from services.utils import MODELS_DIR, REPORTS_DIR, UPLOADS_DIR, ensure_storage_dirs
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,7 +34,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("automl-backend")
 
-app = FastAPI(title="Agentic AutoML POC Backend", version="0.2.0")
+app = FastAPI(title="Agentic AutoML POC Backend", version="0.3.0")
+master_agent = MasterAgent()
 
 
 @app.on_event("startup")
@@ -62,18 +76,33 @@ async def upload_csv(file: UploadFile = File(...)) -> JobResponse:
     return JobResponse(job_id=job_id, message="CSV uploaded successfully.")
 
 
+def _run_pipeline_async(job_id: str) -> None:
+    try:
+        master_agent.run(job_id)
+    except Exception:
+        logger.exception("Background pipeline run failed: job_id=%s", job_id)
+
+
 @app.post("/run-automl", response_model=GenericMessageResponse)
 def run_automl(payload: RunAutoMLRequest) -> GenericMessageResponse:
     job = pipeline_state_service.get_job(payload.job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
+    if job["job_status"] == "running":
+        return GenericMessageResponse(
+            job_id=payload.job_id,
+            status="already_running",
+            message="AutoML pipeline is already running for this job.",
+        )
 
-    pipeline_state_service.update_job_status(payload.job_id, "running")
-    logger.info("AutoML run requested: job_id=%s", payload.job_id)
+    worker = threading.Thread(target=_run_pipeline_async, args=(payload.job_id,), daemon=True)
+    worker.start()
+    logger.info("AutoML run started in background: job_id=%s", payload.job_id)
+
     return GenericMessageResponse(
         job_id=payload.job_id,
         status="accepted",
-        message="AutoML pipeline run accepted. Phase 3+ execution will be wired in next steps.",
+        message="AutoML pipeline started. Track progress via /pipeline-status/{job_id}.",
     )
 
 
@@ -99,11 +128,15 @@ def eda_report(job_id: str) -> StubDataResponse:
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
 
+    eda_data = job.get("outputs", {}).get("eda")
+    if eda_data:
+        return StubDataResponse(job_id=job_id, status="ready", data=eda_data)
+
     return StubDataResponse(
         job_id=job_id,
         status="not_ready",
         data={
-            "message": "EDA report is not generated yet. It will be produced in later phases.",
+            "message": "EDA report is not generated yet.",
             "report_path": str(REPORTS_DIR / f"{job_id}_eda.json"),
         },
     )
@@ -115,11 +148,21 @@ def model_results(job_id: str) -> StubDataResponse:
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
 
+    results = {
+        "problem_type_detection": job.get("outputs", {}).get("problem_type_detection"),
+        "model_training": job.get("outputs", {}).get("model_training"),
+        "cross_validation": job.get("outputs", {}).get("cross_validation"),
+        "metrics_evaluation": job.get("outputs", {}).get("metrics_evaluation"),
+        "model_selection": job.get("outputs", {}).get("model_selection"),
+    }
+    if any(value is not None for value in results.values()):
+        return StubDataResponse(job_id=job_id, status="ready", data=results)
+
     return StubDataResponse(
         job_id=job_id,
         status="not_ready",
         data={
-            "message": "Model results are not available yet. They will be generated in later phases.",
+            "message": "Model results are not available yet.",
             "model_path": str(MODELS_DIR / f"{job_id}_pipeline.joblib"),
         },
     )
@@ -135,7 +178,7 @@ def predict(job_id: str, payload: PredictRequest) -> StubDataResponse:
         job_id=job_id,
         status="not_ready",
         data={
-            "message": "Prediction endpoint is stubbed in Phase 2. It will use saved model in later phases.",
+            "message": "Prediction endpoint remains a stub until Phase 6.",
             "received_record": payload.record,
         },
     )
@@ -151,7 +194,7 @@ def download_model(job_id: str):
     if not model_path.exists():
         raise HTTPException(
             status_code=404,
-            detail="Model file not found yet. Run AutoML and complete model selection first.",
+            detail="Model file not found yet. It will be available in later phases.",
         )
 
     return FileResponse(path=str(model_path), media_type="application/octet-stream", filename=model_path.name)
