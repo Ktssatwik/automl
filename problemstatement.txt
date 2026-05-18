@@ -1,65 +1,57 @@
-﻿Problem Statement - Agentic AutoML POC
-======================================
+﻿Problem Statement - Agentic AutoML POC (LLM-Based)
+==================================================
 
 Background
 ----------
-Many users with domain data (insurance, healthcare, finance, housing, churn, education, loan approval) struggle to build ML models because model development requires data understanding, preprocessing choices, algorithm selection, evaluation, and deployment knowledge.
+Users with domain datasets often cannot manually perform target detection, problem framing, EDA interpretation, and end-to-end ML pipeline design.
 
 Core Problem
 ------------
-Given only a CSV upload, how can we automatically build a reliable ML workflow that:
-- identifies the most likely target column,
-- determines whether the problem is classification or regression,
-- runs full data preparation and modeling,
-- evaluates and selects the best model,
-- and makes the model immediately usable for prediction and download?
+Given only a CSV upload, build an agentic AutoML system that automatically:
+- identifies the most likely target,
+- determines classification vs regression,
+- infers business domain,
+- performs EDA and downstream ML pipeline steps,
+- provides prediction and downloadable model outputs.
 
 Objective
 ---------
-Create a complete Proof of Concept system with a multi-agent architecture where each agent handles one specialized ML task and a master agent coordinates the entire lifecycle end-to-end.
+Create a complete POC with a Master Agent and specialist agents where key data-understanding decisions are LLM-based, while maintaining robust fallback behavior.
 
 Scope
 -----
 In scope:
-- CSV upload and dataset profiling
-- Automatic target inference using heuristics
-- Automatic problem type detection
-- Rule-based domain inference
-- EDA summaries for interpretability
-- Preprocessing pipeline construction (no leakage)
-- Train/test split + cross-validation
-- Multi-model training and comparison
-- Best model selection and persistence
-- Prediction endpoint/UI for new records
-- Downloadable model artifact
-- Step-wise pipeline tracking with statuses
+- CSV upload and profiling
+- LLM-based target detection reasoning
+- LLM-based problem type detection
+- LLM-based domain understanding
+- EDA metrics + LLM EDA narrative
+- Job-based tracking and API-driven orchestration
+- Streamlit UI integration (later phases)
 
-Out of scope (for first POC):
+Out of scope (first POC):
 - Advanced hyperparameter optimization
-- Large-scale distributed compute
-- Production-grade auth and orchestration infra
-- Real-time stream processing
+- Distributed training infrastructure
+- Production authentication and enterprise deployment controls
 
 Functional Requirements
 -----------------------
-- Backend FastAPI endpoints for upload, run, status, reports, prediction, and model download.
-- Streamlit frontend for full user interaction.
-- Separate class per agent with structured outputs.
-- Job-based tracking and persistent artifacts.
-- Logging and exception handling.
-- Dataset-agnostic behavior for tabular CSVs.
+- FastAPI endpoints for upload, run, status, EDA/results, prediction, and model download.
+- Multi-agent architecture with one class per agent.
+- LLM service wrapper for strict JSON outputs.
+- Structured step outputs stored by job_id.
+- Fallback logic when LLM is unavailable.
 
 Success Criteria
 ----------------
-- User can upload any reasonable tabular CSV.
-- System auto-detects target and task type with explanation.
-- Full agent pipeline completes and produces evaluated best model.
-- User can submit a new record and receive prediction.
-- User can download trained model file.
-- UI clearly shows progress and final results.
+- User uploads CSV and gets autonomous pipeline progress.
+- System returns target/problem/domain decisions with reasoning.
+- `decision_mode` indicates whether output came from LLM or fallback.
+- Pipeline remains stable even if LLM is unavailable.
+- End-to-end flow is demonstrable and extensible.
 
-Future Extension
-----------------
-- Replace or augment rule-based agents with LLM reasoning.
-- Add MCP tool integrations to agent decision points.
-- Expand model search, explainability, and deployment options.
+Future Extensions
+-----------------
+- Add MCP tools to enrich agent context.
+- Add stronger prompt policies and output validators.
+- Expand model search, explainability, and deployment adapters.

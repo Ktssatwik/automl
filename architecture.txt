@@ -9,13 +9,13 @@
 
 automl-agent-poc/
 |-- backend/
-|   |-- main.py                       # FastAPI app + route wiring
+|   |-- __init__.py
+|   |-- main.py
 |   |-- requirements.txt
 |   |
 |   |-- agents/
-|   |   |-- __init__.py
-|   |   |-- base_agent.py             # common agent interface: run(context) -> dict
-|   |   |-- master_agent.py           # orchestrates all agents and step transitions
+|   |   |-- base_agent.py
+|   |   |-- master_agent.py
 |   |   |-- csv_understanding_agent.py
 |   |   |-- problem_type_agent.py
 |   |   |-- domain_agent.py
@@ -30,15 +30,13 @@ automl-agent-poc/
 |   |   `-- report_agent.py
 |   |
 |   |-- schemas/
-|   |   |-- __init__.py
-|   |   |-- requests.py               # Pydantic request models
-|   |   `-- responses.py              # Pydantic response models
+|   |   |-- requests.py
+|   |   `-- responses.py
 |   |
 |   |-- services/
-|   |   |-- __init__.py
-|   |   |-- pipeline_state.py         # per job state + step status store
-|   |   |-- model_store.py            # save/load pipeline + metadata
-|   |   `-- utils.py                  # helpers: io, validation, json serialization
+|   |   |-- pipeline_state.py
+|   |   |-- llm_service.py            # OpenAI LLM invocation and JSON output handling
+|   |   `-- utils.py
 |   |
 |   |-- storage/
 |   |   |-- uploads/
@@ -49,55 +47,41 @@ automl-agent-poc/
 |       `-- insurance_sample.csv
 |
 |-- frontend/
-|   |-- app.py                        # Streamlit UI
+|   |-- app.py
 |   `-- requirements.txt
 |
 |-- README.md
 `-- .gitignore
 
 3. Core Runtime Components
-- Streamlit frontend:
-  - CSV upload
-  - Run AutoML button
-  - Poll and show pipeline status
-  - Show EDA/results/model comparison
-  - Prediction input form
-  - Model download action
+- Master Agent orchestration + specialist agents.
+- LLM-first specialist logic in Phase 4 agents:
+  - CSVUnderstandingAgent
+  - ProblemTypeAgent
+  - DomainAgent
+  - EDAAgent
+- Deterministic fallback heuristics if LLM key/config is unavailable.
 
-- FastAPI backend:
-  - upload/run/status/result/predict/download endpoints
-  - validates input and routes work to Master Agent
+4. LLM Architecture (Current POC)
+- Agent computes structured dataset metadata with pandas.
+- Agent sends compact metadata payload to LLM via `llm_service.py`.
+- LLM returns strict JSON decisions/reasoning.
+- Agent validates output and stores final structured result.
+- If LLM fails, fallback logic prevents pipeline failure.
 
-- Master Agent:
-  - maintains context and step status
-  - executes specialist agents in strict order
-  - captures outputs/errors and final report
-
-- Specialist Agents:
-  - one responsibility per file
-  - deterministic rule-based logic for POC
-  - structured JSON-like return payloads
-
-- Services:
-  - persistent job state keyed by job_id
-  - model artifact and metadata persistence
-  - reusable utility methods
-
-4. Data and Artifact Flow
-- Upload CSV -> save to storage/uploads/{job_id}.csv
-- Run pipeline -> generate EDA + model metrics + best model
+5. Data and Artifact Flow
+- Upload CSV -> storage/uploads/{job_id}.csv
+- Run pipeline -> agent outputs + EDA/report artifacts
 - Save outputs:
-  - storage/models/{job_id}_pipeline.joblib
-  - storage/models/{job_id}_metadata.json
   - storage/reports/{job_id}_eda.json
   - storage/reports/{job_id}_report.json
+  - later phases add model artifacts in storage/models/
 
-5. MCP/LLM Ready Design Points
-- Keep agent contract stable: run(context: dict) -> dict
-- Add explicit placeholders in each agent for future MCP tool calls
-- Keep reasoning fields in outputs so LLM agent replacement is easy
+6. MCP/LLM Integration Direction
+- Current: LLM via OpenAI API service wrapper.
+- Next: MCP tool hooks can be plugged per agent to enrich context (domain KBs, profiling tools, report tools).
 
-6. POC Boundaries
-- No advanced tuning or distributed training
-- No production auth/queueing
-- Focus on clean modular architecture and full end-to-end usability
+7. POC Boundaries
+- No advanced tuning/distributed compute.
+- No production auth/queueing.
+- Focus on a clear LLM-based agentic AutoML pipeline with end-to-end flow.

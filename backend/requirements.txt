@@ -5,3 +5,6 @@ numpy
 scikit-learn
 joblib
 python-multipart
+python-dotenv
+langchain-core
+langchain-groq
